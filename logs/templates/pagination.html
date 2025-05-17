@@ -1,0 +1,30 @@
+{% if events and events.paginator.num_pages > 1 %}
+  <nav class="inline-flex items-center gap-1 select-none" aria-label="Pagination">
+    {% with page_obj=events %}
+      <!-- ← prev -->
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-md border border-slate-300 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">←</a>
+      {% else %}
+        <span class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-400">←</span>
+      {% endif %}
+
+      <!-- numbers -->
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <span class="px-3 py-1.5 rounded-md bg-primary text-white font-medium">{{ num }}</span>
+        {% elif num <= 2 or num > page_obj.paginator.num_pages|add:'-2' or num|add:'-2' <= page_obj.number <= num|add:'2' %}
+          <a href="?page={{ num }}" class="px-3 py-1.5 rounded-md border border-slate-300 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">{{ num }}</a>
+        {% elif num == 3 and page_obj.number > 5 or num == page_obj.paginator.num_pages|add:'-2' and page_obj.number < page_obj.paginator.num_pages|add:'-4' %}
+          <span class="px-3 py-1 text-slate-500">…</span>
+        {% endif %}
+      {% endfor %}
+
+      <!-- next → -->
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-md border border-slate-300 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">→</a>
+      {% else %}
+        <span class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-400">→</span>
+      {% endif %}
+    {% endwith %}
+  </nav>
+{% endif %}

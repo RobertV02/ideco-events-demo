@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Событие #{{ event.id }}{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-8">Событие #{{ event.id }}</h2>
+
+<div class="bg-white dark:bg-slate-900 shadow rounded-xl ring-1 ring-slate-200 dark:ring-slate-700 p-8 text-sm">
+  <dl class="grid grid-cols-12 gap-y-4">
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Дата/время</dt>
+    <dd class="col-span-9">{{ event.created_at|localtime }}</dd>
+
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Источник</dt>
+    <dd class="col-span-9 font-mono">{{ event.src_ip }}</dd>
+
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Назначение</dt>
+    <dd class="col-span-9 font-mono">{{ event.dst_ip }}</dd>
+
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Протокол</dt>
+    <dd class="col-span-9 uppercase">{{ event.protocol }}</dd>
+
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Действие</dt>
+    <dd class="col-span-9">
+      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+        {% if event.action == 'ALLOW' %} bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-300
+        {% elif event.action == 'DROP' %} bg-rose-100 text-rose-800 dark:bg-rose-800/30 dark:text-rose-300
+        {% else %} bg-slate-100 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300 {% endif %}">
+        {{ event.action }}
+      </span>
+    </dd>
+
+    <dt class="col-span-3 font-medium text-slate-500 dark:text-slate-400">Raw-сообщение</dt>
+    <dd class="col-span-9">
+      <pre class="bg-slate-100 dark:bg-slate-800/60 p-4 rounded-lg overflow-x-auto text-xs">{{ event.raw_message }}</pre>
+    </dd>
+  </dl>
+
+  <a href="{% url 'events' %}"
+     class="inline-flex items-center mt-10 px-5 py-3 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100">
+    ← Назад к списку
+  </a>
+</div>
+{% endblock %}

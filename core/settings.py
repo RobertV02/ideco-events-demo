@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+	'django.contrib.humanize',
     'logs',
 ]
 
@@ -103,6 +104,16 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
+
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BEAT_SCHEDULE = {
+    "run-event-every-60s": {
+        "task": "logs.tasks.run_event_pipeline",
+        "schedule": 60.0,
+    }
+}
+IDECO_LOG_PATH = "/absolute/path/to/utm.log"  # или по умолчанию ~/utm_sample.log
+
 
 LANGUAGE_CODE = 'en-us'
 
