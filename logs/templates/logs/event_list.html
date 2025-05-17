@@ -1,0 +1,15 @@
+{# templates/event_detail.html #}
+{% extends "base.html" %}
+{% block content %}
+  <h2>Событие #{{ event.id }}</h2>
+  <dl class="row">
+    <dt class="col-sm-3">Дата/Время</dt><dd class="col-sm-9">{{ event.created }}</dd>
+    <dt class="col-sm-3">Источник</dt><dd class="col-sm-9">{{ event.src_ip }}</dd>
+    <dt class="col-sm-3">Назначение</dt><dd class="col-sm-9">{{ event.dst_ip }}</dd>
+    <dt class="col-sm-3">Протокол</dt><dd class="col-sm-9">{{ event.protocol }}</dd>
+    <dt class="col-sm-3">Действие</dt><dd class="col-sm-9">{{ event.action }}</dd>
+    <dt class="col-sm-3">Raw</dt>
+    <dd class="col-sm-9"><pre>{{ event.raw_message }}</pre></dd>
+  </dl>
+  <a href="{% url 'events' %}" class="btn btn-secondary">← Назад к списку</a>
+{% endblock %}
