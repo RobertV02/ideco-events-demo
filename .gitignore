@@ -1,0 +1,14 @@
+# Django / Python
+*.pyc
+__pycache__/
+*.sqlite3
+.env
+venv/
+.idea/ .vscode/
+
+# Node/Frontend (если появится)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
