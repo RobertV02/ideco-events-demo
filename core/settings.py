@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -114,6 +115,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 IDECO_LOG_PATH = "/absolute/path/to/utm.log"  # или по умолчанию ~/utm_sample.log
 
+UTM_HOST = os.getenv("UTM_HOST", "192.168.56.10")
 
 LANGUAGE_CODE = 'en-us'
 
