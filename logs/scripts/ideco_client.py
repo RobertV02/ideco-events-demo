@@ -1,6 +1,5 @@
 import requests
 import json
-from decouple import config
 requests.packages.urllib3.disable_warnings()
 import requests
 
