@@ -16,7 +16,7 @@ class IdecoClient:
         self.base_url = 'https://192.168.56.10:8443'
         self.user     = 'admin'
         self.password = 'Robertsyuzililit2+'
-        self.rest_path = '/api/'
+        self.rest_path = '/api'
 
         self.session = requests.Session()
         self.session.verify = False
