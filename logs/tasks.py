@@ -37,7 +37,6 @@ def block_ip(self, ip: str):
         auth_payload = {
             "login":     login,
             "password":  passwd,
-            "recaptcha": "",
             "rest_path": "/"
         }
         resp = session.post(f"{url}/web/auth/login", json=auth_payload, timeout=10)
