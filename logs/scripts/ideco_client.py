@@ -4,7 +4,7 @@ requests.packages.urllib3.disable_warnings()
 import requests
 
 
-class Ideco:
+class IdecoClient:
     def __init__(self, ip = '', port = '8443', user = '', password = '', rest_path = '/'):
         self.ip = '192.168.56.10'
         self.port = '8443'
