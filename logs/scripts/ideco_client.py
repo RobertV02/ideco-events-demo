@@ -36,6 +36,14 @@ class IdecoClient:
         r.raise_for_status()
         self._logged_in = True
         
+    def parse_json(self, response):
+        try:
+            response = response.json()
+            return response
+        except:
+            print('Ошибка парсинга JSON')
+		
+
     def get_from_endpoint(self, url):
         """
         Отправляет запрос на указанный URL методом GET
