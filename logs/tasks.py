@@ -27,16 +27,15 @@ def block_ip(self, ip: str):
     При ошибках логирует их и завершает задачу без падения.
     """
     url     = 'https://192.168.56.10:8443'
-    login   = 'admin'
-    passwd  = 'Robertsyuzililit2+'
+
 
     session = requests.Session()
     session.verify = False  # отключаем проверку SSL (для self-signed)
     try:
         # 1. Авторизация
         auth_payload = {
-            "login":     login,
-            "password":  passwd,
+            "login": "admin",
+            "password": "Robertsyuzililit2+",
             "rest_path": "/"
         }
         resp = session.post(f"{url}/web/auth/login", json=auth_payload, timeout=10)
