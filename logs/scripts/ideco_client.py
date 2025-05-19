@@ -366,9 +366,9 @@ class IdecoClient:
         :return:
             Возвращает словарь со списком для блокировки по IP-адресу
         """
-        print(self.get_ip_address_lists())
+        print('xx '+ self.get_ip_address_lists())
         for list in self.get_ip_address_lists().items():
-            if list[1]["title"] == 'List_for_test_api':
+            if list[1]["title"] == 'ip для блокировки':
                 return list
         print("Список для блокировки не найден")
         return self.logout()
