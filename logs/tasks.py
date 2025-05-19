@@ -1,8 +1,23 @@
 # logs/tasks.py
-import requests, os
 from celery import shared_task
-from django.conf import settings
+from .scripts.adapter import run as adapter_run
+from .scripts.cleaner import run as cleaner_run
+from .scripts.normalizer import run as normalizer_run
+import logging
+import requests, os
 from requests.exceptions import HTTPError
+
+logger = logging.getLogger(__name__)
+
+@shared_task
+def run_event_pipeline():
+    """
+    Последовательный запуск конвейера обработки событий:
+    adapter -> cleaner -> normalizer
+    """
+    events = adapter_run()
+    events = cleaner_run(events)
+    return normalizer_run(events)
 
 @shared_task
 def block_ip(ip):
@@ -56,4 +71,3 @@ def block_ip(ip):
         r.raise_for_status()
 
         print(f"[IRP] IP {ip} заблокирован (ID alias {alias_id})")
-
