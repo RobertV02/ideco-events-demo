@@ -222,9 +222,8 @@ class IdecoClient:
             address
                 IP-адрес
         """
-        print("Блокируется "+str(address))
 
-        """if self.check_status_ip(address):
+        if self.check_status_ip(address):
             print(f'Адрес {address} уже заблокирован')
             return
         else:
@@ -236,7 +235,7 @@ class IdecoClient:
             if response is not None:
                 print(f'Адрес {address} заблокирован')
             else:
-                print(f'Не удалось заблокировать адрес {address}')"""
+                print(f'Не удалось заблокировать адрес {address}')
 
     def unblock_ip(self, address):
         """
