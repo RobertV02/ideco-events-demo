@@ -1,6 +1,6 @@
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
+import json
 # Отключаем предупреждения про самоподписанный сертификат
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -45,15 +45,29 @@ class IdecoClient:
         r.raise_for_status()
         self._logged_in = False
         print("Выход выполнен")
-
-    def get_from_endpoint(self, path):
-        if not self._logged_in:
-            self.login()
-        url = f"{self.base_url}{self.rest_path}{path}"
-        r = self.session.get(url)
+        
+    def parse_json(self, response):
         try:
-            r.raise_for_status()
-            return r.json()
+            response = response.json()
+            return response
+        except:
+            print('Ошибка парсинга JSON')
+            
+    def get_from_endpoint(self, url):
+        """
+        Отправляет запрос на указанный URL методом GET
+
+        :parameters:
+            url
+                URL для отправки
+
+        :return:
+            Возвращает словарь
+        """
+        try:
+            response = self.session.get(url = url)
+            response.raise_for_status()
+            return self.parse_json(response)
         except requests.exceptions.HTTPError as e:
             print(f"HTTP error occurred: {e}")
             return None
@@ -73,19 +87,21 @@ class IdecoClient:
 
     def get_ip_address_lists(self):
         """Возвращает словарь всех alias-списков: id → info"""
-        return self.get_from_endpoint('/aliases/ip_address_lists')
+        url = f'{self.base_url}/aliases/ip_address_lists'
+        return self.get_from_endpoint(url)
 
-    def find_blocklist(self, title='ip для блокировки'):
-        """Ищет alias-список по заголовку и возвращает (id, info)"""
-        lists = self.get_ip_address_lists()
-        if not lists:
-            print("Не получили список alias-списков")
-            return None, None
-        for list_id, info in lists.items():
-            if info.get('title') == title:
-                return list_id, info
-        print(f"Список '{title}' не найден")
-        return None, None
+    def find_blocklist(self):
+        """
+        Возвращает список для блокировки IP-адресов
+
+        :return:
+            Возвращает словарь со списком для блокировки по IP-адресу
+        """
+        for list in self.get_ip_address_lists().items():
+            if list[1]["title"] == 'List_for_test_api':
+                return list
+        print("Список для блокировки не найден")
+        return self.logout()
 
     def check_status_ip(self, address):
         """True, если адрес уже в списке"""
