@@ -1,20 +1,15 @@
 # logs/scripts/cleaner.py
 from typing import List, Dict
-from logs.models import Event
 
-def run(events: List[Dict[str, str]]) -> List[Dict[str, str]]:
+def run(events: List[Dict]) -> List[Dict]:
     """
-    Убирает события, которые уже есть в базе данных (модель Event).
+    Фильтрует дубликаты raw_message.
     """
-    filtered: List[Dict[str, str]] = []
+    seen = set()
+    unique = []
     for ev in events:
-        exists = Event.objects.filter(
-            src_ip=ev['src_ip'],
-            dst_ip=ev['dst_ip'],
-            protocol=ev['protocol'],
-            action=ev['action'],
-            raw_message=ev['raw_message']
-        ).exists()
-        if not exists:
-            filtered.append(ev)
-    return filtered
+        rm = ev["raw_message"]
+        if rm not in seen:
+            seen.add(rm)
+            unique.append(ev)
+    return unique

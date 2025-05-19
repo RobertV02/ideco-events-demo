@@ -1,17 +1,20 @@
 # logs/scripts/normalizer.py
 from typing import List, Dict
-from logs.models import Event
+from ..models import Event
 
-def run(events: List[Dict[str, str]]) -> int:
+def run(events: List[Dict]) -> int:
     """
-    Сохраняет события в базу данных как объекты Event.
+    Создаёт Event для каждого new_event.
     """
+    count = 0
     for ev in events:
         Event.objects.create(
-            src_ip=ev['src_ip'],
-            dst_ip=ev['dst_ip'],
-            protocol=ev['protocol'],
-            action=ev['action'],
-            raw_message=ev['raw_message']
+            src_ip="",          # будем парсить в детекторе
+            dst_ip="",
+            protocol="",
+            action="",
+            description="",
+            raw_message=ev["raw_message"]
         )
-    return len(events)
+        count += 1
+    return count

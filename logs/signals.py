@@ -2,13 +2,10 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Event
-from .tasks import block_ip
+from .block_detector import detect_and_block
 
 @receiver(post_save, sender=Event)
-def trigger_block_ip(sender, instance, created, **kwargs):
-    """
-    При сохранении Event с action 'Bad TLS Certificate'
-    отправляем задачу блокировки IP
-    """
-    if created and instance.action == "Bad TLS Certificate":
-        block_ip.delay(instance.src_ip)
+def on_event_saved(sender, instance, created, **kwargs):
+    if created:
+        # весь парсинг и решение о блокировке — в отдельном модуле
+        detect_and_block(instance)
