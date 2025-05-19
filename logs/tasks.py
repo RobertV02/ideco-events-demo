@@ -19,55 +19,71 @@ def run_event_pipeline():
     events = cleaner_run(events)
     return normalizer_run(events)
 
-@shared_task
-def block_ip(ip):
+
+@shared_task(bind=True, name="logs.tasks.block_ip")
+def block_ip(self, ip: str):
     """
-    Логин → alias IP → правило DROP.
-    При ошибке выводит traceback в логи Celery.
+    Пытается залогиниться, создать alias и правило drop для IP.
+    При ошибках логирует их и завершает задачу без падения.
     """
     url     = 'https://192.168.56.10:8443'
     login   = 'admin'
     passwd  = 'Robertsyuzililit2+'
 
-    with requests.Session() as s:
-        s.verify = False                 # самоподписанный сертификат
-
+    session = requests.Session()
+    session.verify = False  # отключаем проверку SSL (для self-signed)
+    try:
         # 1. Авторизация
         auth_payload = {
-            "login": login,
-            "password": passwd,
+            "login":     login,
+            "password":  passwd,
             "recaptcha": "",
             "rest_path": "/"
         }
-        r = s.post(f"{url}/web/auth/login", json=auth_payload, timeout=10)
-        r.raise_for_status()             # 200 ⇾ вошли, куки сохранены
+        resp = session.post(f"{url}/web/auth/login", json=auth_payload, timeout=10)
+        resp.raise_for_status()
+    except HTTPError as e:
+        # логируем HTTP-ошибку (542 и т.д.) и выходим
+        self.update_state(state="FAILURE", meta={"exc": str(e), "step": "login"})
+        print(f"[block_ip] Не удалось залогиниться: {e}")
+        return f"login error: {e}"
+    except RequestException as e:
+        self.update_state(state="FAILURE", meta={"exc": str(e), "step": "login"})
+        print(f"[block_ip] Ошибка сети при логине: {e}")
+        return f"network error: {e}"
 
+    try:
         # 2. Создаём alias IP
         alias_payload = {
-            "title": f"IRP_{ip}",
+            "title":   f"IRP_{ip}",
             "comment": "auto-ban from IRP",
-            "value": ip
+            "value":   ip
         }
-        r = s.post(f"{url}/aliases/ip_addresses",
-                   json=alias_payload, timeout=10)
-        r.raise_for_status()
-        alias_id = r.json().get("id")
+        resp = session.post(f"{url}/aliases/ip_addresses", json=alias_payload, timeout=10)
+        resp.raise_for_status()
+        alias_id = resp.json().get("id")
+    except Exception as e:
+        print(f"[block_ip] Не удалось создать alias: {e}")
+        return f"alias error: {e}"
 
-        # 3. Добавляем DROP-правило
+    try:
+        # 3. Добавляем правило DROP
         rule_payload = {
-            "action": "drop",
-            "comment": f"IRP-auto-ban {ip}",
+            "action":                "drop",
+            "comment":               f"IRP-auto-ban {ip}",
             "destination_addresses": [alias_id],
-            "destination_ports": ["any"],
-            "incoming_interface": "any",
-            "outgoing_interface": "any",
-            "protocol": "any",
-            "source_addresses": ["any"],
-            "timetable": ["any"],
-            "enabled": True
+            "destination_ports":     ["any"],
+            "incoming_interface":    "any",
+            "outgoing_interface":    "any",
+            "protocol":              "any",
+            "source_addresses":      ["any"],
+            "timetable":             ["any"],
+            "enabled":               True
         }
-        r = s.post(f"{url}/firewall/rules/forward",
-                   json=rule_payload, timeout=10)
-        r.raise_for_status()
-
-        print(f"[IRP] IP {ip} заблокирован (ID alias {alias_id})")
+        resp = session.post(f"{url}/firewall/rules/forward", json=rule_payload, timeout=10)
+        resp.raise_for_status()
+        print(f"[block_ip] IP {ip} заблокирован (alias {alias_id})")
+        return f"blocked {ip}"
+    except Exception as e:
+        print(f"[block_ip] Не удалось добавить правило: {e}")
+        return f"rule error: {e}"
