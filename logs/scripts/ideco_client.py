@@ -14,7 +14,7 @@ class IdecoClient:
     """
 
     def __init__(self):
-        self.base_url = '192.168.56.10'
+        self.base_url = 'https://192.168.56.10:8443'
         self.login    = 'admin'
         self.password = 'Robertsyuzililit2+'
         self.session  = requests.Session()
