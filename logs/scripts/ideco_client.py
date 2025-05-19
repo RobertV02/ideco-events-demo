@@ -1,145 +1,134 @@
-# файл: logs/scripts/ideco_client.py
-
-import os
 import requests
-from django.conf import settings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+# Отключаем предупреждения про самоподписанный сертификат
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class IdecoClient:
-	"""
-	Клиент для работы с REST-API Ideco UTM:
-		- логинимся,
-		- получаем списки IP-адресов,
-		- находим нужный блок-лист по title,
-		- добавляем туда новые адреса.
-	"""
+    """
+    Клиент для работы с REST-API Ideco UTM:
+      - логинимся,
+      - получаем списки IP-адресов,
+      - находим нужный блок-лист по title,
+      - добавляем или удаляем туда адреса.
+    """
+    def __init__(self):
+        self.base_url = 'https://192.168.56.10:8443'
+        self.user     = 'admin'
+        self.password = 'Robertsyuzililit2+'
+        self.rest_path = '/api/v2'
 
-	def __init__(self):
-			self.base_url = 'https://192.168.56.10:8443'
-			self.login    = 'admin'
-			self.password = 'Robertsyuzililit2+'
-			self.session  = requests.Session()
-			# если у вас самоподписанный сертификат:
-			self.session.verify = False
-			self._logged_in = False
+        self.session = requests.Session()
+        self.session.verify = False
+        self._logged_in = False
 
-	def logout(self):
-		"""
-		Выполняет разавторизацию, меняет статус авторизации "self.logged"
-		
-		"""
-		if self.logged:
-				url = f'{self.base_url}/web/auth/login'
-				response = self.session.delete(url)
-				if response.status_code == 200:
-						self.logged = False
-						print("Выход выполнен")
-				response.raise_for_status()
-	
-	def login(self):
-					"""
-					Выполняет авторизацию, меняет статус авторизации "self.logged"
+    def login(self):
+        url = f"{self.base_url}{self.rest_path}/web/auth/login"
+        payload = {
+            "login": self.user,
+            "password": self.password,
+            "rest_path": "/"
+        }
+        r = self.session.post(url, json=payload)
+        try:
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise RuntimeError(f"Ошибка авторизации: {e}")
+        self._logged_in = True
+        print("Успешная авторизация")
 
-					"""
-					url = f'{self.base_url}/web/auth/login'
-					data = {
-							"login": self.user,
-							"password": self.password,
-							"rest_path": self.rest_path
-					}
-					response = self.post_to_endpoint(url, data)
-					if response is not None:
-							print("Успешная авторизация")
-							self.logged = True
-					else:
-							raise RuntimeError("Ошибка авторизации")
-	def parse_json(self, response):
-			try:
-					response = response.json()
-					return response
-			except:
-					print('Ошибка парсинга JSON')
-	
+    def logout(self):
+        if not self._logged_in:
+            return
+        url = f"{self.base_url}{self.rest_path}/web/auth/login"
+        r = self.session.delete(url)
+        r.raise_for_status()
+        self._logged_in = False
+        print("Выход выполнен")
 
-	def get_from_endpoint(self, url):
-			"""
-			Отправляет запрос на указанный URL методом GET
+    def get_from_endpoint(self, path):
+        if not self._logged_in:
+            self.login()
+        url = f"{self.base_url}{self.rest_path}{path}"
+        r = self.session.get(url)
+        try:
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP error occurred: {e}")
+            return None
 
-			:parameters:
-					url
-							URL для отправки
+    def put_to_endpoint(self, path, data):
+        if not self._logged_in:
+            self.login()
+        url = f"{self.base_url}{self.rest_path}{path}"
+        r = self.session.put(url, json=data)
+        try:
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP error occurred: {e}")
+            print(r.content)
+            return None
 
-			:return:
-					Возвращает словарь
-			"""
-			try:
-					response = self.session.get(url = url)
-					response.raise_for_status()
-					return self.parse_json(response)
-			except requests.exceptions.HTTPError as e:
-					print(f"HTTP error occurred: {e}")
-					return None
-			
-	def get_ip_address_lists(self):
-			url = f'{self.base_url}/aliases/ip_address_lists'
-			return self.get_from_endpoint(url)
+    def get_ip_address_lists(self):
+        """Возвращает словарь всех alias-списков: id → info"""
+        return self.get_from_endpoint('/aliases/ip_address_lists')
 
-	def find_blocklist(self):
-			"""
-			Возвращает список для блокировки IP-адресов
+    def find_blocklist(self, title='ip для блокировки'):
+        """Ищет alias-список по заголовку и возвращает (id, info)"""
+        lists = self.get_ip_address_lists()
+        if not lists:
+            print("Не получили список alias-списков")
+            return None, None
+        for list_id, info in lists.items():
+            if info.get('title') == title:
+                return list_id, info
+        print(f"Список '{title}' не найден")
+        return None, None
 
-			:return:
-					Возвращает словарь со списком для блокировки по IP-адресу
-			"""
-			for list in self.get_ip_address_lists().items():
-					if list[1]["title"] == 'ip для блокировки':
-							return list
-			print("Список для блокировки не найден")
-			return self.logout()
+    def check_status_ip(self, address):
+        """True, если адрес уже в списке"""
+        blocklist_id, info = self.find_blocklist()
+        if not info:
+            return False
+        return address in info.get('values', [])
 
-	def put_to_endpoint(self, url: str, data: dict):
-			"""Универсальный PUT → возвращает JSON или бросает ошибку."""
-			r = self.session.put(url, json=data, timeout=10)
-			r.raise_for_status()
-			return r.json()
-			
-	def check_status_ip(self, address):
-					"""
-					Проверяет статус блокировки IP-адреса
+    def block_ip(self, address):
+        """
+        Добавляет IP-адрес в alias-список.
+        """
+        # Проверяем, не заблокирован ли уже
+        if self.check_status_ip(address):
+            print(f"Адрес {address} уже заблокирован")
+            return
+        # Находим список
+        blocklist_id, data = self.find_blocklist()
+        if not blocklist_id:
+            raise RuntimeError("Список для блокировки не найден")
+        # Добавляем и отправляем
+        data['values'].append(address)
+        data.pop('type', None)
+        path = f"/aliases/ip_address_lists/{blocklist_id}"
+        result = self.put_to_endpoint(path, data)
+        if result is not None:
+            print(f"Адрес {address} заблокирован")
+        else:
+            print(f"Не удалось заблокировать адрес {address}")
 
-					:parameters:
-							address
-									IP-адрес для проверки
-
-					:return:
-							Возвращает "True", если IP-адрес находится в списке для блокировки, 
-							"False", если IP-адреса нет в списке для блокировки
-					"""
-					if address in self.find_blocklist()[1]['values']:
-							return True
-					else:
-							return False
-
-	def block_ip(self, address):
-			"""
-			Блокирует IP-адрес, путём добавления в список для блокировки IP-адресов
-
-			:parameters:
-					address
-							IP-адрес
-			"""
-
-			if self.check_status_ip(address):
-					print(f'Адрес {address} уже заблокирован')
-					return
-			else:
-					blocklist_id, data = self.find_blocklist()
-					data['values'].append(address)
-					data.pop('type', None)
-					url = f'{self.base_url}/aliases/ip_address_lists/{blocklist_id}'
-					response = self.put_to_endpoint(url, data)
-					if response is not None:
-							print(f'Адрес {address} заблокирован')
-					else:
-							print(f'Не удалось заблокировать адрес {address}')
-	
-	
+    def unblock_ip(self, address):
+        """
+        Удаляет IP-адрес из alias-списка.
+        """
+        if not self.check_status_ip(address):
+            print(f"Адрес {address} не блокируется")
+            return
+        blocklist_id, data = self.find_blocklist()
+        data['values'].remove(address)
+        data.pop('type', None)
+        path = f"/aliases/ip_address_lists/{blocklist_id}"
+        result = self.put_to_endpoint(path, data)
+        if result is not None:
+            print(f"Адрес {address} разблокирован")
+        else:
+            print(f"Не удалось разблокировать адрес {address}")
