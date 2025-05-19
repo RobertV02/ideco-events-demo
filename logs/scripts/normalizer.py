@@ -13,7 +13,7 @@ def run(events: List[Dict]) -> int:
     for ev in events:
         Event.objects.create(
             src_ip=ev["src_ip"],
-            dst_ip=getattr(settings, "UTM_HOST", "0.0.0.0"),
+            dst_ip="192.168.56.10",
             protocol=ev.get("protocol", ""),
             action=ev.get("action", ""),
             raw_message=ev.get("raw_message", ""),
