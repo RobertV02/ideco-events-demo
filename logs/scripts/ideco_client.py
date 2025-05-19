@@ -100,7 +100,7 @@ class IdecoClient:
         Выполняет авторизацию, меняет статус авторизации "self.logged"
 
         """
-        url = 'https://192.168.56.10:8433/web/auth/login'
+        url = 'https://192.168.56.10:8443/web/auth/login'
         data = {
             "login": self.user,
             "password": self.password,
@@ -119,7 +119,7 @@ class IdecoClient:
         
         """
         if self.logged:
-            url = 'https://192.168.56.10:8433/web/auth/login'
+            url = 'https://192.168.56.10:8443/web/auth/login'
             response = self.session.delete(url)
             if response.status_code == 200:
                 self.logged = False
@@ -134,7 +134,7 @@ class IdecoClient:
         :return:
             Возвращает список словарей со всеми пользователями
         """
-        url = 'https://192.168.56.10:8433/user_backend/users'
+        url = 'https://192.168.56.10:8443/user_backend/users'
         return self.get_from_endpoint(url)
 
     def get_rules_list(self):
@@ -144,7 +144,7 @@ class IdecoClient:
         :return:
             Возвращает список словарей со всеми правилами политики
         """
-        url = 'https://192.168.56.10:8433/firewall/rules/forward'
+        url = 'https://192.168.56.10:8443/firewall/rules/forward'
         return self.get_from_endpoint(url)
 
     def get_ip_address_lists(self):
@@ -154,7 +154,7 @@ class IdecoClient:
         :return:
             Возвращает список словарей со всеми списками IP-адресов (ip_address_lists)
         """
-        url = 'https://192.168.56.10:8433/aliases/ip_address_lists'
+        url = 'https://192.168.56.10:8443/aliases/ip_address_lists'
         return self.get_from_endpoint(url)
 
     def get_auth_sessions(self):
@@ -164,7 +164,7 @@ class IdecoClient:
         :return:
             Возвращает список словарей с информацией об авторизованных сессиях пользователей
         """
-        url = 'https://192.168.56.10:8433/monitor_backend/auth_sessions'
+        url = 'https://192.168.56.10:8443/monitor_backend/auth_sessions'
         return self.get_from_endpoint(url)
 
 
@@ -183,7 +183,7 @@ class IdecoClient:
             block_rule = self.find_rule_for_block()
             user_id = self.find_user_by_name(username)
             block_rule['source_addresses'].append(f"user.id.{user_id}")
-            url = f'https://192.168.56.10:8433/firewall/rules/forward/{block_rule.pop("id")}'
+            url = f'https://192.168.56.10:8443/firewall/rules/forward/{block_rule.pop("id")}'
             data = block_rule
             response = self.put_to_endpoint(url, data)
             if response is not None:
@@ -206,7 +206,7 @@ class IdecoClient:
             block_rule = self.find_rule_for_block()
             user_id = self.find_user_by_name(username)
             block_rule['source_addresses'].remove(f"user.id.{user_id}")
-            url = f'https://192.168.56.10:8433/firewall/rules/forward/{block_rule.pop("id")}'
+            url = f'https://192.168.56.10:8443/firewall/rules/forward/{block_rule.pop("id")}'
             data = block_rule
             response = self.put_to_endpoint(url, data)
             if response is not None:
@@ -230,7 +230,7 @@ class IdecoClient:
             blocklist_id, data = self.find_blocklist()
             data['values'].append(address)
             data.pop('type', None)
-            url = f'https://192.168.56.10:8433/aliases/ip_address_lists/{blocklist_id}'
+            url = f'https://192.168.56.10:8443/aliases/ip_address_lists/{blocklist_id}'
             response = self.put_to_endpoint(url, data)
             if response is not None:
                 print(f'Адрес {address} заблокирован')
