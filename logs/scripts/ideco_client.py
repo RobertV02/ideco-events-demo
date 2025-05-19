@@ -1,6 +1,6 @@
 import requests
 
-class Ideco:
+class IdecoClient:
     def __init__(self, ip='', port='8443', user='', password='', rest_path='/'):
         self.base_url = 'https://192.168.56.10:8443'
         self.login    = 'admin'
