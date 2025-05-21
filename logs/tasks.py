@@ -24,11 +24,16 @@ def run_event_pipeline():
 @shared_task
 def block_ip(address: str):
     """
-    Celery-таск: по событию баним IP, дописывая его в заранее созданный IP-список.
+    Celery: баним IP по событию, добавляя его в список.
     """
-    client = IdecoClient()
     try:
+        client = IdecoClient(
+            ip='192.168.56.10',
+            port='8443',
+            user='admin',
+            password='Robertsyuzililit2+',
+            rest_path='/'
+        )
         client.block_ip(address)
     except Exception as e:
-        # никогда не падаем, а логируем
         print(f"[IRP] Ошибка при бане {address}: {e}")
