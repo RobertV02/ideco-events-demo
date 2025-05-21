@@ -1,25 +1,21 @@
 import requests
-import urllib3
 
-# Отключаем предупреждения по сертификату
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# отключаем InsecureRequestWarning
+requests.packages.urllib3.disable_warnings()
 
 class IdecoClient:
     def __init__(self, ip, port='8443', user='', password='', rest_path='/'):
-        # сохраняем параметры
         self.ip = ip
         self.port = port
         self.user = user
         self.password = password
         self.rest_path = rest_path
 
-        # базовый URL и сессия
         self.base_url = f'https://{self.ip}:{self.port}'
         self.session = requests.Session()
         self.session.verify = False
         self.logged = False
 
-        # сразу логинимся
         self.login()
 
     def __enter__(self):
@@ -29,7 +25,6 @@ class IdecoClient:
         self.logout()
 
     def login(self):
-        """Авторизация и получение cookie."""
         url = f'{self.base_url}/web/auth/login'
         payload = {
             "login": self.user,
@@ -42,7 +37,6 @@ class IdecoClient:
         self.logged = True
 
     def logout(self):
-        """Удаление сессии."""
         if not self.logged:
             return
         url = f'{self.base_url}/web/auth/login'
@@ -52,7 +46,6 @@ class IdecoClient:
         self.logged = False
 
     def _get(self, path):
-        """Обёртка GET-запроса."""
         if not self.logged:
             self.login()
         url = f'{self.base_url}{path}'
@@ -65,7 +58,6 @@ class IdecoClient:
             return None
 
     def _put(self, path, data):
-        """Обёртка PUT-запроса."""
         if not self.logged:
             self.login()
         url = f'{self.base_url}{path}'
@@ -80,49 +72,44 @@ class IdecoClient:
         return self._get('/firewall/rules/forward')
 
     def get_ip_address_lists(self):
+        # тут возвращается список словарей с полем "id", "title", "values"...
         return self._get('/aliases/lists/addresses')
 
     def get_auth_sessions(self):
         return self._get('/monitor_backend/auth_sessions')
 
     def find_blocklist(self):
-        """
-        Ищем список IP-адресов для блокировки.
-        Ожидаем список dict'ов:
-        [
-          { "id": "...", "title": "ip для блокировки", "values": [...], ... },
-          ...
-        ]
-        """
         lists = self.get_ip_address_lists()
         if not isinstance(lists, list):
-            raise RuntimeError("Ожидался список, получили не список")
+            raise RuntimeError(f"Ожидался список, получили {type(lists)}")
         for entry in lists:
             if entry.get("title") == 'ip для блокировки':
-                list_id = entry.get("id")
-                return list_id, entry
+                return entry.get("id"), entry
         raise RuntimeError("Список для блокировки не найден")
 
     def block_ip(self, address):
-        """Добавляем IP в блок-лист."""
         list_id, data = self.find_blocklist()
-        values = data.get('values', [])
-        if address in values:
+        if address in data.get('values', []):
             print(f'Адрес {address} уже заблокирован')
             return
-        values.append(address)
-        self._put(f'/aliases/ip_address_lists/{list_id}', data)
+        payload = data.copy()
+        payload['values'] = payload.get('values', []) + [address]
+        payload.pop('type', None)
+        # вот правильный путь к ресурсу
+        self._put(f'/aliases/lists/addresses/{list_id}', payload)
         print(f'Адрес {address} заблокирован')
 
     def unblock_ip(self, address):
-        """Удаляем IP из блок-листа."""
         list_id, data = self.find_blocklist()
-        values = data.get('values', [])
-        if address not in values:
+        if address not in data.get('values', []):
             print(f'Адрес {address} не был заблокирован')
             return
-        values.remove(address)
-        self._put(f'/aliases/ip_address_lists/{list_id}', data)
+        payload = data.copy()
+        vals = payload.get('values', [])
+        vals.remove(address)
+        payload['values'] = vals
+        payload.pop('type', None)
+        self._put(f'/aliases/lists/addresses/{list_id}', payload)
         print(f'Адрес {address} разблокирован')
 
     def find_rule_for_block(self):
