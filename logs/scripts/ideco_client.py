@@ -1,5 +1,8 @@
 import requests
-import json
+import urllib3
+
+# Отключаем предупреждения по сертификату
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class IdecoClient:
     def __init__(self, ip, port='8443', user='', password='', rest_path='/'):
@@ -83,37 +86,45 @@ class IdecoClient:
         return self._get('/monitor_backend/auth_sessions')
 
     def find_blocklist(self):
-        """Ищем список IP-адресов для блокировки."""
+        """
+        Ищем список IP-адресов для блокировки.
+        Ожидаем список dict'ов:
+        [
+          { "id": "...", "title": "ip для блокировки", "values": [...], ... },
+          ...
+        ]
+        """
         lists = self.get_ip_address_lists()
-        # .items() если API отдаёт {id: {...}, ...}
-        for list_id, info in lists.items():
-            if info.get("title") == 'ip для блокировки':
-                return list_id, info
+        if not isinstance(lists, list):
+            raise RuntimeError("Ожидался список, получили не список")
+        for entry in lists:
+            if entry.get("title") == 'ip для блокировки':
+                list_id = entry.get("id")
+                return list_id, entry
         raise RuntimeError("Список для блокировки не найден")
 
     def block_ip(self, address):
         """Добавляем IP в блок-лист."""
-        # проверка статуса
         list_id, data = self.find_blocklist()
-        if address in data.get('values', []):
+        values = data.get('values', [])
+        if address in values:
             print(f'Адрес {address} уже заблокирован')
             return
-        data['values'].append(address)
-        # отправляем
+        values.append(address)
         self._put(f'/aliases/ip_address_lists/{list_id}', data)
         print(f'Адрес {address} заблокирован')
 
     def unblock_ip(self, address):
         """Удаляем IP из блок-листа."""
         list_id, data = self.find_blocklist()
-        if address not in data.get('values', []):
+        values = data.get('values', [])
+        if address not in values:
             print(f'Адрес {address} не был заблокирован')
             return
-        data['values'].remove(address)
+        values.remove(address)
         self._put(f'/aliases/ip_address_lists/{list_id}', data)
         print(f'Адрес {address} разблокирован')
 
-    # Аналогично можно поправить block_user и unblock_user, если нужно:
     def find_rule_for_block(self):
         for rule in self.get_rules_list():
             if rule.get("id") == 500:
