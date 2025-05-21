@@ -154,7 +154,7 @@ class IdecoClient:
         :return:
             Возвращает список словарей со всеми списками IP-адресов (ip_address_lists)
         """
-        url = 'https://192.168.56.10:8443/aliases/lists/addresses'
+        url = 'https://192.168.56.10:8443/aliases/ip_address_lists'
         return self.get_from_endpoint(url)
 
     def get_auth_sessions(self):
