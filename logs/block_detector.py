@@ -1,4 +1,3 @@
-# logs/block_detector.py
 import re, logging
 from .tasks import block_ip
 
